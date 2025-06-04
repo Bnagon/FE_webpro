@@ -16,6 +16,8 @@ const initialEvents = [
     date: "06/15/2023",
     location: "Central Park",
     description: "Annual summer celebration with music, food, and activities for all ages.",
+    createdBy: "user_admin",
+    creatorName: "EventAdmin",
   },
   {
     id: 2,
@@ -23,6 +25,8 @@ const initialEvents = [
     date: "07/22/2023",
     location: "Convention Center",
     description: "Explore the latest innovations in technology and network with industry professionals.",
+    createdBy: "user_tech",
+    creatorName: "TechGuru",
   },
   {
     id: 3,
@@ -30,6 +34,8 @@ const initialEvents = [
     date: "08/05/2023",
     location: "City Gallery",
     description: "Featuring works from local and international artists exploring themes of nature and technology.",
+    createdBy: "user_artist",
+    creatorName: "ArtLover",
   },
   {
     id: 4,
@@ -37,6 +43,8 @@ const initialEvents = [
     date: "09/10/2023",
     location: "Riverside Amphitheater",
     description: "Live performances from top artists across multiple genres.",
+    createdBy: "user_music",
+    creatorName: "MusicFan",
   },
   {
     id: 5,
@@ -44,6 +52,8 @@ const initialEvents = [
     date: "10/01/2023",
     location: "Downtown Plaza",
     description: "Sample cuisines from around the world with over 50 food vendors.",
+    createdBy: "user_foodie",
+    creatorName: "FoodExplorer",
   },
   {
     id: 6,
@@ -51,6 +61,8 @@ const initialEvents = [
     date: "10/15/2023",
     location: "Public Library",
     description: "Meet the author and get your copy signed at this exclusive reading event.",
+    createdBy: "user_reader",
+    creatorName: "BookWorm",
   },
   {
     id: 7,
@@ -58,6 +70,8 @@ const initialEvents = [
     date: "11/05/2023",
     location: "Community Center",
     description: "Learn techniques for mindfulness and relaxation in this beginner-friendly workshop.",
+    createdBy: "user_wellness",
+    creatorName: "YogaTeacher",
   },
   {
     id: 8,
@@ -65,6 +79,8 @@ const initialEvents = [
     date: "12/20/2023",
     location: "Town Square",
     description: "Holiday shopping with handcrafted gifts, decorations, and seasonal treats.",
+    createdBy: "user_market",
+    creatorName: "MarketOrganizer",
   },
 ]
 
@@ -72,6 +88,7 @@ export default function EventPage() {
   // In a real app, this would come from an authentication context or API
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [username, setUsername] = useState("JohnDoe")
+  const [userId, setUserId] = useState("user_john") // Add user ID
   const [events, setEvents] = useState(initialEvents)
   const [showEventForm, setShowEventForm] = useState(false)
 
@@ -93,8 +110,11 @@ export default function EventPage() {
       id: Date.now(),
       title: eventData.title,
       date: formatDate(eventData.date),
+      time: eventData.time,
       location: eventData.location,
       description: eventData.description,
+      createdBy: userId, // Include user ID
+      creatorName: username, // Include username
       // For this demo, we'll create image placeholders based on the number of images
       images: eventData.images.map(() => "placeholder"),
     }
@@ -102,6 +122,29 @@ export default function EventPage() {
     // Add the new event to the beginning of the list
     setEvents([newEvent, ...events])
     setShowEventForm(false)
+
+    // In a real app, you would send this data to your API:
+    /*
+    const eventPayload = {
+      user_id: userId,
+      creator_name: username,
+      title: eventData.title,
+      date: eventData.date,
+      time: eventData.time,
+      location: eventData.location,
+      description: eventData.description,
+      images: eventData.images, // These would be uploaded files
+      created_at: new Date().toISOString()
+    }
+    
+    fetch('/api/events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(eventPayload)
+    })
+    */
   }
 
   const formatDate = (dateString: string) => {
@@ -115,7 +158,7 @@ export default function EventPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fce4ec" }}>
-      <Header isLoggedIn={isLoggedIn} username={username} />
+      <Header/>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 pb-24">
@@ -140,7 +183,7 @@ export default function EventPage() {
           </button>
           {isLoggedIn && (
             <p className="mt-2 text-sm">
-              Logged in as <strong>{username}</strong>
+              Logged in as <strong>{username}</strong> (ID: {userId})
             </p>
           )}
         </div>

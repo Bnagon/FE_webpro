@@ -1,23 +1,54 @@
 "use client"
 
-import type React from "react"
-
 import { Search, User, Menu } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { jwtDecode } from "jwt-decode"
 
-interface HeaderProps {
-  isLoggedIn?: boolean
-  username?: string
+interface HeaderProps {}
+
+interface DecodedToken {
+  email: string
+  exp: number
 }
 
-export function Header({ isLoggedIn = false, username = "User" }: HeaderProps) {
+export function Header({}: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [searchType, setSearchType] = useState<"tweet" | "event">("tweet")
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [username, setUsername] = useState("User")
   const router = useRouter()
+
+useEffect(() => {
+  const fetchUser = async () => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+
+    try {
+      const res = await fetch("http://localhost:8081/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!res.ok) throw new Error("Failed to fetch user")
+
+      const data = await res.json()
+      setUsername(data.name || "User")
+      setIsLoggedIn(true)
+    } catch (err) {
+      console.error("Error fetching user", err)
+      localStorage.removeItem("token")
+      setIsLoggedIn(false)
+    }
+  }
+
+  fetchUser()
+}, [])
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,6 +61,13 @@ export function Header({ isLoggedIn = false, username = "User" }: HeaderProps) {
     }
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    setIsLoggedIn(false)
+    setUsername("User")
+    router.push("/tweet")
+  }
+
   return (
     <>
       {/* Header */}
@@ -38,44 +76,36 @@ export function Header({ isLoggedIn = false, username = "User" }: HeaderProps) {
           <img src="/logo.svg" alt="Komyuniti" className="h-8 w-auto sm:h-10 md:h-12 lg:h-14" />
         </Link>
 
+        {/* Search Box */}
         <div className="relative max-w-md w-full mx-4 hidden md:block">
           <form onSubmit={handleSearch} className="flex items-center bg-white rounded-full">
-            {/* Menu dropdown for search type */}
+            {/* Dropdown */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsSearchDropdownOpen(!isSearchDropdownOpen)}
-                className="flex items-center px-3 py-2 text-gray-500 hover:text-gray-700 transition-colors"
+                className="flex items-center px-3 py-2 text-gray-500 hover:text-gray-700"
               >
                 <Menu className="w-5 h-5" />
               </button>
 
               {isSearchDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1 w-32 bg-white rounded-md shadow-lg py-1 z-10 border">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchType("tweet")
-                      setIsSearchDropdownOpen(false)
-                    }}
-                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                      searchType === "tweet" ? "bg-gray-50 font-medium" : ""
-                    }`}
-                  >
-                    Tweet
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchType("event")
-                      setIsSearchDropdownOpen(false)
-                    }}
-                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                      searchType === "event" ? "bg-gray-50 font-medium" : ""
-                    }`}
-                  >
-                    Event
-                  </button>
+                  {["tweet", "event"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        setSearchType(type as any)
+                        setIsSearchDropdownOpen(false)
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                        searchType === type ? "bg-gray-50 font-medium" : ""
+                      }`}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -93,12 +123,13 @@ export function Header({ isLoggedIn = false, username = "User" }: HeaderProps) {
           </form>
         </div>
 
+        {/* Right Side */}
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
             <div className="relative">
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-linear-to-r from-[#F2A9BB] to-[#F74E6D] text-white hover:bg-[#f74e6d]/90 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#F2A9BB] to-[#F74E6D] text-white hover:bg-[#f74e6d]/90"
               >
                 <User className="w-4 h-4" />
                 <span>{username}</span>
@@ -111,10 +142,7 @@ export function Header({ isLoggedIn = false, username = "User" }: HeaderProps) {
                   </Link>
                   <button
                     className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
-                    onClick={() => {
-                      // In a real app, this would call a logout function
-                      alert("Logout functionality would go here")
-                    }}
+                    onClick={handleLogout}
                   >
                     Logout
                   </button>
@@ -125,13 +153,13 @@ export function Header({ isLoggedIn = false, username = "User" }: HeaderProps) {
             <>
               <Link
                 href="/login"
-                className="px-6 py-2 rounded-full border-2 border-[#f74e6d] text-[#f74e6d] hover:bg-[#f74e6d]/10 transition-colors"
+                className="px-6 py-2 rounded-full border-2 border-[#f74e6d] text-[#f74e6d] hover:bg-[#f74e6d]/10"
               >
                 Log in
               </Link>
               <Link
                 href="/signup"
-                className="px-6 py-2 rounded-full bg-linear-to-r from-[#F2A9BB] to-[#F74E6D] text-white hover:bg-[#f74e6d]/90 transition-colors"
+                className="px-6 py-2 rounded-full bg-gradient-to-r from-[#F2A9BB] to-[#F74E6D] text-white hover:bg-[#f74e6d]/90"
               >
                 Sign up
               </Link>
@@ -139,62 +167,6 @@ export function Header({ isLoggedIn = false, username = "User" }: HeaderProps) {
           )}
         </div>
       </header>
-
-      {/* Mobile Search */}
-      <div className="md:hidden px-4 mb-6">
-        <form onSubmit={handleSearch} className="flex items-center bg-white rounded-full">
-          {/* Menu dropdown for search type */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsSearchDropdownOpen(!isSearchDropdownOpen)}
-              className="flex items-center px-3 py-2 text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            {isSearchDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-32 bg-white rounded-md shadow-lg py-1 z-10 border">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchType("tweet")
-                    setIsSearchDropdownOpen(false)
-                  }}
-                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                    searchType === "tweet" ? "bg-gray-50 font-medium" : ""
-                  }`}
-                >
-                  Tweet
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchType("event")
-                    setIsSearchDropdownOpen(false)
-                  }}
-                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                    searchType === "event" ? "bg-gray-50 font-medium" : ""
-                  }`}
-                >
-                  Event
-                </button>
-              </div>
-            )}
-          </div>
-
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search ${searchType}s...`}
-            className="bg-transparent border-none outline-none flex-grow px-2 py-2"
-          />
-          <button type="submit" className="p-2">
-            <Search className="w-5 h-5 text-gray-500" />
-          </button>
-        </form>
-      </div>
     </>
   )
 }

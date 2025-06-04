@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { StarRating } from "./star-rating"
@@ -14,6 +16,7 @@ interface AnimeCardProps {
   genre?: string
   isFavorited?: boolean
   onToggleFavorite?: (id: string | number) => void
+  currentUserId?: string
 }
 
 export function AnimeCard({
@@ -25,6 +28,7 @@ export function AnimeCard({
   genre,
   isFavorited,
   onToggleFavorite,
+  currentUserId = "user_john", // Default for demo
 }: AnimeCardProps) {
   const router = useRouter()
 
@@ -32,10 +36,57 @@ export function AnimeCard({
     router.push(`/anime/${id}`)
   }
 
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent navigation when clicking favorite button
+
+    if (onToggleFavorite) {
+      onToggleFavorite(id)
+    }
+
+    // In a real app, you would call the API to add/remove like
+    try {
+      if (!isFavorited) {
+        // Add like
+        /*
+        await fetch('/api/likes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            content_type: 'anime',
+            content_id: id
+          })
+        })
+        */
+        console.log(`Adding like: user_id=${currentUserId}, content_type=anime, content_id=${id}`)
+      } else {
+        // Remove like
+        /*
+        await fetch('/api/likes', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            content_type: 'anime',
+            content_id: id
+          })
+        })
+        */
+        console.log(`Removing like: user_id=${currentUserId}, content_type=anime, content_id=${id}`)
+      }
+    } catch (error) {
+      console.error("Error updating like:", error)
+    }
+  }
+
   return (
     <div
       onClick={handleClick}
-      className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer group"
+      className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer group relative"
     >
       <div className="aspect-[3/4] relative overflow-hidden">
         {posterUrl ? (
@@ -54,6 +105,16 @@ export function AnimeCard({
             </div>
           </div>
         )}
+
+        {/* Favorite button */}
+        {onToggleFavorite && (
+          <button
+            onClick={handleFavoriteClick}
+            className="absolute top-2 right-2 p-2 bg-white/80 rounded-full hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
+          >
+            <Heart className={`w-5 h-5 ${isFavorited ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
+          </button>
+        )}
       </div>
 
       <div className="p-4">
@@ -70,17 +131,6 @@ export function AnimeCard({
         <span className="text-sm text-gray-500">
           {reviewCount} review{reviewCount !== 1 ? "s" : ""}
         </span>
-        {onToggleFavorite && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggleFavorite(id)
-            }}
-            className="mt-2"
-          >
-            <Heart className={`w-5 h-5 ${isFavorited ? "fill-red-500 text-red-500" : "text-gray-400"}`} />
-          </button>
-        )}
       </div>
     </div>
   )

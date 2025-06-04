@@ -131,7 +131,7 @@ export default function TweetDetailPage({ params }: { params: { id: string } }) 
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fce4ec" }}>
-      <Header isLoggedIn={isLoggedIn} username={username} />
+      <Header/>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 max-w-3xl pb-24">

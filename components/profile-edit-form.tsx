@@ -43,17 +43,48 @@ export function ProfileEditForm({ initialData, onSave, onCancel }: ProfileEditFo
     }
   }
 
-  const handleSave = () => {
-    onSave({
-      ...formData,
-      avatar,
+  const handleSave = async () => {
+  try {
+    // Create form data for avatar upload + other fields
+    const formPayload = new FormData()
+    formPayload.append("username", formData.username)
+    formPayload.append("email", formData.email)
+    formPayload.append("bio", formData.bio)
+    formPayload.append("location", formData.location)
+    if (avatar) {
+      formPayload.append("avatar", avatar)
+    }
+
+    const token = localStorage.getItem("token")
+
+    const res = await fetch("http://localhost:8081/me", {
+      method: "PUT", // or POST depending on your backend
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // Do NOT set Content-Type header manually when using FormData
+      },
+      body: formPayload,
     })
+
+    if (!res.ok) {
+      throw new Error("Failed to update profile")
+    }
+
+    const updatedData = await res.json()
+
+    // Optionally update UI or notify user on success
+    onSave(updatedData)
 
     // Clean up object URL
     if (avatarPreview) {
       URL.revokeObjectURL(avatarPreview)
     }
+  } catch (error) {
+    console.error("Error updating profile:", error)
+    // Optionally show error to user
   }
+}
+
 
   const handleCancel = () => {
     // Clean up object URL
@@ -146,20 +177,6 @@ export function ProfileEditForm({ initialData, onSave, onCancel }: ProfileEditFo
           />
         </div>
 
-        {/* Location */}
-        <div>
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-            Location
-          </label>
-          <input
-            type="text"
-            id="location"
-            value={formData.location}
-            onChange={(e) => handleInputChange("location", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f74e6d] focus:border-transparent"
-            placeholder="Where are you located?"
-          />
-        </div>
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3">

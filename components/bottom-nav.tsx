@@ -24,30 +24,32 @@ export function BottomNav() {
   }, [pathname])
 
   const handleNavigation = (tab: string) => {
-    setActiveTab(tab)
+  setActiveTab(tab)
 
-    switch (tab) {
-      case "home":
-        router.push("/tweet")
-        break
-      case "calendar":
-        router.push("/event")
-        break
-      case "favorites":
-        router.push("/favorites")
-        break
-      case "reviews":
-        router.push("/reviews")
-        break
-      case "profile":
-        router.push("/profile")
-        break
-      case "logout":
-        // Handle logout logic here
-        alert("Logout functionality would go here")
-        break
-    }
+  switch (tab) {
+    case "home":
+      router.push("/tweet")
+      break
+    case "calendar":
+      router.push("/event")
+      break
+    case "favorites":
+      router.push("/favorites")
+      break
+    case "reviews":
+      router.push("/reviews")
+      break
+    case "profile":
+      router.push("/profile")
+      break
+    case "logout":
+      localStorage.removeItem("token")     // 🔐 ลบ JWT
+      setActiveTab("calendar")             // 👉 รีเซ็ต tab ไม่ให้ logout ค้างไว้
+      window.location.href = "/tweet"              // 🔁 เปลี่ยนหน้าไป login
+      break
   }
+}
+
 
   return (
     <div className="fixed bottom-4 left-0 right-0 bg-white rounded-full p-4 w-1/3 mx-auto">

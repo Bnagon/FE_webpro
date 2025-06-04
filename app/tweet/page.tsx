@@ -7,43 +7,56 @@ import { TweetPost } from "@/components/tweet-post"
 import { TweetComposer } from "@/components/tweet-composer"
 import { useSearchParams } from "next/navigation"
 
-// Sample tweet data
+// Sample tweet data with like counts
 const initialTweets = [
   {
     id: 1,
     username: "JaneDoe",
+    userId: "user_jane",
     date: "05/22/2023",
     content: "Just attended an amazing workshop on sustainable living! Can't wait to implement what I learned.",
     commentCount: 11,
-    likeCount: 24,
+    likeCount: 24, // Total likes from all users
     images: [],
     isEdited: false,
   },
   {
     id: 2,
     username: "TechGuru",
+    userId: "user_tech",
     date: "05/21/2023",
     content: "Check out these photos from the tech conference! The new innovations were mind-blowing.",
     commentCount: 2,
-    likeCount: 15,
+    likeCount: 15, // Total likes from all users
     images: ["placeholder", "placeholder"],
     isEdited: false,
   },
   {
     id: 3,
     username: "TravelExplorer",
+    userId: "user_travel",
     date: "05/20/2023",
     content: "Just got back from my trip to Japan. The cherry blossoms were absolutely breathtaking!",
     commentCount: 8,
-    likeCount: 42,
+    likeCount: 42, // Total likes from all users
     images: ["placeholder"],
     isEdited: false,
   },
 ]
 
+// Sample likes data to determine if current user liked each tweet
+const sampleLikes = [
+  { id: 1, user_id: "user_john", content_type: "tweet", content_id: 2, liked_at: "2023-05-22T10:30:00Z" },
+  { id: 2, user_id: "user_john", content_type: "tweet", content_id: 3, liked_at: "2023-05-21T15:45:00Z" },
+  // Other users' likes
+  { id: 3, user_id: "user_jane", content_type: "tweet", content_id: 1, liked_at: "2023-05-20T09:15:00Z" },
+  { id: 4, user_id: "user_tech", content_type: "tweet", content_id: 1, liked_at: "2023-05-19T14:20:00Z" },
+]
+
 export default function TweetPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [username, setUsername] = useState("JohnDoe")
+  const [userId, setUserId] = useState("user_john")
   const [tweets, setTweets] = useState(initialTweets)
 
   const searchParams = useSearchParams()
@@ -57,16 +70,20 @@ export default function TweetPage() {
       )
     : tweets
 
-  const handleTweetSubmit = (content: string, images: File[]) => {
-    // In a real app, you would upload the images to a server
-    // and get back URLs to store in the database
+  // Function to check if current user liked a tweet
+  const isLikedByCurrentUser = (tweetId: number) => {
+    return sampleLikes.some(
+      (like) => like.user_id === userId && like.content_type === "tweet" && like.content_id === tweetId,
+    )
+  }
 
-    // For this demo, we'll create image placeholders based on the number of images
+  const handleTweetSubmit = (content: string, images: File[]) => {
     const imagePlaceholders = images.map(() => "placeholder")
 
     const newTweet = {
-      id: Date.now(), // Use timestamp as a simple unique ID
+      id: Date.now(),
       username,
+      userId,
       date: new Date()
         .toLocaleDateString("en-US", {
           month: "2-digit",
@@ -76,17 +93,34 @@ export default function TweetPage() {
         .replace(/\//g, "/"),
       content,
       commentCount: 0,
-      likeCount: 0,
+      likeCount: 0, // New tweets start with 0 likes
       images: imagePlaceholders,
       isEdited: false,
     }
 
-    // Add the new tweet to the beginning of the list
     setTweets([newTweet, ...tweets])
+
+    /*
+    // In a real app, you would send this data to your API:
+    const tweetData = {
+      user_id: userId,
+      username: username,
+      content: content,
+      images: images,
+      created_at: new Date().toISOString()
+    }
+    
+    fetch('/api/tweets', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(tweetData)
+    })
+    */
   }
 
   const handleTweetEdit = (tweetId: string | number, newContent: string, newImages: File[]) => {
-    // In a real app, you would send the edit to your API
     const imagePlaceholders = newImages.map(() => "placeholder")
 
     setTweets((prevTweets) =>
@@ -95,7 +129,7 @@ export default function TweetPage() {
           ? {
               ...tweet,
               content: newContent,
-              images: [...tweet.images, ...imagePlaceholders], // In a real app, you'd handle image updates properly
+              images: [...tweet.images, ...imagePlaceholders],
               isEdited: true,
             }
           : tweet,
@@ -105,26 +139,23 @@ export default function TweetPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fce4ec" }}>
-      <Header isLoggedIn={isLoggedIn} username={username} />
+      <Header/>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-6 max-w-3xl pb-24">
-        {/* Demo toggle for logged in state */}
         <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
           <button onClick={() => setIsLoggedIn(!isLoggedIn)} className="px-4 py-2 bg-[#526e0c] text-white rounded-md">
             {isLoggedIn ? "Simulate Logout" : "Simulate Login"}
           </button>
           {isLoggedIn && (
             <p className="mt-2 text-sm">
-              Logged in as <strong>{username}</strong>
+              Logged in as <strong>{username}</strong> (ID: {userId})
             </p>
           )}
         </div>
 
-        {/* Tweet Composer (only shown when logged in) */}
         {isLoggedIn && (
           <div className="mb-8">
-            <TweetComposer onSubmit={handleTweetSubmit} />
+            <TweetComposer onSubmittweet={handleTweetSubmit} />
           </div>
         )}
 
@@ -137,7 +168,7 @@ export default function TweetPage() {
           </div>
         )}
 
-        {/* Tweet Feed */}
+        {/* Tweet Feed with proper like counts and user like status */}
         {filteredTweets.map((tweet) => (
           <TweetPost
             key={tweet.id}
@@ -146,9 +177,11 @@ export default function TweetPage() {
             date={tweet.date}
             content={tweet.content}
             commentCount={tweet.commentCount}
-            likeCount={tweet.likeCount}
+            likeCount={tweet.likeCount} // Total likes from all users
             images={tweet.images}
             currentUser={isLoggedIn ? username : undefined}
+            currentUserId={isLoggedIn ? userId : undefined}
+            initialLiked={isLoggedIn ? isLikedByCurrentUser(tweet.id) : false} // Whether current user liked it
             onEdit={handleTweetEdit}
             isEdited={tweet.isEdited}
           />

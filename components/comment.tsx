@@ -8,6 +8,11 @@ interface CommentProps {
 }
 
 export function Comment({ username, content, date, avatarUrl }: CommentProps) {
+  const formattedDate = new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+      month: "long",
+      day: "numeric"
+  })
   return (
     <div className="mb-4 last:mb-0">
       <div className="flex items-start gap-3">
@@ -25,7 +30,7 @@ export function Comment({ username, content, date, avatarUrl }: CommentProps) {
         <div className="flex-1">
           <div className="flex items-baseline gap-2">
             <h3 className="font-bold">{username}</h3>
-            <span className="text-xs text-gray-500">{date}</span>
+            <span className="text-xs text-gray-500">{formattedDate}</span>
           </div>
           <p className="mt-1 text-sm">{content}</p>
         </div>

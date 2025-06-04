@@ -6,6 +6,7 @@ import { useState } from "react"
 import { ArrowLeft, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { handleLogin } from "../../lib/login.js"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,11 +14,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, you would handle authentication here
-    console.log("Login attempt:", { email, password })
-    // For demo purposes, redirect to the main page
+    await handleLogin({ email, password })
     router.push("/tweet")
   }
 
@@ -32,7 +31,7 @@ export default function LoginPage() {
         </div>
 
         {/* Sign In Form */}
-        <div className="bg-white rounded-3xl p-8 shadow-lg">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl shadow-[#F394A9]">
           <div className="mb-6">
             <button onClick={() => router.back()} className="mb-4">
               <ArrowLeft className="w-6 h-6 text-gray-600" />
@@ -88,7 +87,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full py-2 bg-[#f74e6d] text-white rounded-full font-medium hover:bg-[#f74e6d]/90 transition-colors"
+              className="w-full py-2 bg-linear-to-r from-[#F2A9BB] to-[#F74E6D] text-white rounded-full font-medium hover:bg-[#f74e6d]/90 transition-colors"
             >
               Sign In
             </button>

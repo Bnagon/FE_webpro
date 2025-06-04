@@ -1,116 +1,89 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Edit3, Calendar, MessageSquare } from "lucide-react"
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
 import { TweetPost } from "@/components/tweet-post"
 import { EventCard } from "@/components/event-card"
 import { ProfileEditForm } from "@/components/profile-edit-form"
-
-// Sample user data
-const userData = {
-  username: "JohnDoe",
-  email: "john.doe@example.com",
-  bio: "Tech enthusiast and community builder. Love connecting with people and sharing experiences!",
-  location: "San Francisco, CA",
-  joinDate: "March 2023",
-  avatarUrl: "",
-}
-
-// Sample user's tweets
-const userTweets = [
-  {
-    id: 101,
-    username: "JohnDoe",
-    date: "05/24/2023",
-    content: "Just finished setting up my new workspace! Productivity levels are about to go through the roof 🚀",
-    commentCount: 5,
-    likeCount: 12,
-    images: [],
-    isEdited: false,
-  },
-  {
-    id: 102,
-    username: "JohnDoe",
-    date: "05/23/2023",
-    content: "Had an amazing time at the local tech meetup yesterday. Met so many inspiring developers!",
-    commentCount: 8,
-    likeCount: 24,
-    images: ["placeholder"],
-    isEdited: true,
-  },
-  {
-    id: 103,
-    username: "JohnDoe",
-    date: "05/22/2023",
-    content: "Working on a new project that combines AI and community building. Excited to share more soon!",
-    commentCount: 3,
-    likeCount: 18,
-    images: [],
-    isEdited: false,
-  },
-]
-
-// Sample user's events
-const userEvents = [
-  {
-    id: 201,
-    title: "Tech Networking Night",
-    date: "06/30/2023",
-    location: "Downtown Tech Hub",
-    description: "Join us for an evening of networking with fellow tech professionals.",
-  },
-  {
-    id: 202,
-    title: "AI Workshop Series",
-    date: "07/15/2023",
-    location: "Innovation Center",
-    description: "Learn the fundamentals of AI and machine learning in this hands-on workshop.",
-  },
-  {
-    id: 203,
-    title: "Community Hackathon",
-    date: "08/20/2023",
-    location: "University Campus",
-    description: "48-hour hackathon focused on building solutions for local community challenges.",
-  },
-]
+import axios from "axios"
 
 export default function ProfilePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [username, setUsername] = useState("JohnDoe")
+  const [userId, setUserId] = useState("user_john")
   const [activeTab, setActiveTab] = useState<"tweets" | "events">("tweets")
   const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [profileData, setProfileData] = useState(userData)
+  const [profileData, setProfileData] = useState({
+  username: "",
+  email: "",
+  bio: "",
+  location: "",
+  joinDate: "",
+  avatar: "",
+})
+const formatDate = (isoString: string) => {
+  const date = new Date(isoString)
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+}
+
+
+  const [userTweets, setUserTweets] = useState<any[]>([])
+  const [userEvents, setUserEvents] = useState<any[]>([])
+
+  useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("http://localhost:8081/me", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+
+      if (!res.ok) throw new Error("Failed to fetch profile")
+
+      const data = await res.json()
+      setProfileData({
+        username: data.name,
+        email: data.email,
+        bio: data.bio,
+        location: data.location,
+        joinDate: formatDate(data.createdAt),
+        avatar: data.avatar || "",
+      })
+      setUsername(data.name)
+      setUserId(data.id)
+      setIsLoggedIn(true)
+    } catch (err) {
+      console.error(err)
+      setIsLoggedIn(false)
+    }
+  }
+
+  fetchProfile()
+}, [])
+
 
   const handleProfileUpdate = (updatedData: any) => {
     setProfileData({ ...profileData, ...updatedData })
     setIsEditingProfile(false)
+
   }
 
   const handleTweetEdit = (tweetId: string | number, newContent: string, newImages: File[]) => {
     // In a real app, you would update the tweet via API
-    console.log("Edit tweet:", tweetId, newContent, newImages)
+    setUserTweets((prevTweets) =>
+      prevTweets.map((tweet) => (tweet.id === tweetId ? { ...tweet, content: newContent, isEdited: true } : tweet)),
+    )
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fce4ec" }}>
-      <Header isLoggedIn={isLoggedIn} username={username} />
+      <Header/>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 max-w-4xl pb-24">
-        {/* Demo toggle for logged in state */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
-          <button onClick={() => setIsLoggedIn(!isLoggedIn)} className="px-4 py-2 bg-[#526e0c] text-white rounded-md">
-            {isLoggedIn ? "Simulate Logout" : "Simulate Login"}
-          </button>
-          {isLoggedIn && (
-            <p className="mt-2 text-sm">
-              Logged in as <strong>{username}</strong>
-            </p>
-          )}
-        </div>
 
         {!isLoggedIn ? (
           <div className="bg-white rounded-3xl p-8 text-center">
@@ -123,7 +96,16 @@ export default function ProfilePage() {
             <div className="bg-white rounded-3xl p-6 shadow-md mb-6">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 bg-[#d9d9d9] rounded-full flex-shrink-0"></div>
+                  {profileData.avatar ? (
+  <img
+    src={profileData.avatar}
+    alt="Avatar"
+    className="w-20 h-20 rounded-full object-cover flex-shrink-0"
+  />
+) : (
+  <div className="w-20 h-20 bg-[#d9d9d9] rounded-full flex-shrink-0" />
+)}
+
                   <div>
                     <h1 className="text-2xl font-bold">{profileData.username}</h1>
                     <p className="text-gray-600 mb-2">{profileData.email}</p>
@@ -184,7 +166,7 @@ export default function ProfilePage() {
                   }`}
                 >
                   <MessageSquare className="w-5 h-5" />
-                  Tweets
+                  Tweets ({userTweets.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("events")}
@@ -195,7 +177,7 @@ export default function ProfilePage() {
                   }`}
                 >
                   <Calendar className="w-5 h-5" />
-                  Events
+                  Events ({userEvents.length})
                 </button>
               </div>
 

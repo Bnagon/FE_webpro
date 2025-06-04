@@ -14,14 +14,15 @@ interface TweetPostProps {
   date?: string
   content?: string
   commentCount?: number
-  likeCount?: number
+  likeCount?: number // This shows the total like count from database
   images?: string[]
   avatarUrl?: string
   isDetailView?: boolean
-  initialLiked?: boolean
+  initialLiked?: boolean // Whether current user has liked this tweet
   onUnlike?: (id: string | number) => void
   onEdit?: (id: string | number, content: string, images: File[]) => void
   currentUser?: string
+  currentUserId?: string
   isEdited?: boolean
 }
 
@@ -31,14 +32,15 @@ export function TweetPost({
   date = "00/00/0000",
   content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed posuere.",
   commentCount = 0,
-  likeCount = 0,
+  likeCount = 0, // Total likes from all users
   images = [],
   avatarUrl,
   isDetailView = false,
-  initialLiked = false,
+  initialLiked = false, // Whether current user liked it
   onUnlike,
   onEdit,
   currentUser,
+  currentUserId = "user_john",
   isEdited = false,
 }: TweetPostProps) {
   const router = useRouter()
@@ -56,7 +58,12 @@ export function TweetPost({
     setLiked(initialLiked)
   }, [initialLiked])
 
-  const handleLike = (e: React.MouseEvent) => {
+  // Update local like count if prop changes
+  useEffect(() => {
+    setLocalLikeCount(likeCount)
+  }, [likeCount])
+
+  const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation() // Prevent navigation when clicking the like button
 
     // If we're on the favorites page and unliking a tweet
@@ -65,12 +72,78 @@ export function TweetPost({
       return
     }
 
-    if (liked) {
-      setLocalLikeCount(localLikeCount - 1)
-    } else {
-      setLocalLikeCount(localLikeCount + 1)
+    const newLikedState = !liked
+    const newLikeCount = newLikedState ? localLikeCount + 1 : localLikeCount - 1
+
+    // Optimistic update - immediately update UI
+    setLiked(newLikedState)
+    setLocalLikeCount(newLikeCount)
+
+    // In a real app, you would call the API to add/remove like
+    try {
+      if (newLikedState) {
+        // Add like - this would increment the total count in database
+        /*
+        await fetch('/api/likes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            content_type: 'tweet',
+            content_id: id
+          })
+        })
+        
+        // Also update the tweet's like count
+        await fetch(`/api/tweets/${id}/like`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: currentUserId
+          })
+        })
+        */
+        console.log(`Adding like: user_id=${currentUserId}, content_type=tweet, content_id=${id}`)
+        console.log(`New like count: ${newLikeCount}`)
+      } else {
+        // Remove like - this would decrement the total count in database
+        /*
+        await fetch('/api/likes', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            content_type: 'tweet',
+            content_id: id
+          })
+        })
+        
+        // Also update the tweet's like count
+        await fetch(`/api/tweets/${id}/unlike`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: currentUserId
+          })
+        })
+        */
+        console.log(`Removing like: user_id=${currentUserId}, content_type=tweet, content_id=${id}`)
+        console.log(`New like count: ${newLikeCount}`)
+      }
+    } catch (error) {
+      console.error("Error updating like:", error)
+      // Revert optimistic update on error
+      setLiked(!newLikedState)
+      setLocalLikeCount(localLikeCount)
     }
-    setLiked(!liked)
   }
 
   const handleCommentClick = (e: React.MouseEvent) => {
@@ -215,6 +288,7 @@ export function TweetPost({
         )}
       </div>
 
+      {/* Like and Comment buttons with counts */}
       <div className="flex justify-end mt-2 gap-4">
         <button
           className="flex items-center gap-1 text-gray-600 hover:text-gray-800 transition-colors"
@@ -228,6 +302,7 @@ export function TweetPost({
           onClick={handleLike}
         >
           <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : ""}`} />
+          {/* This shows the total like count from all users */}
           {localLikeCount > 0 && <span>{localLikeCount}</span>}
         </button>
       </div>

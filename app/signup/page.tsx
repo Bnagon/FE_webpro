@@ -6,6 +6,7 @@ import { useState } from "react"
 import { ArrowLeft, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { handleregister } from "../../lib/register.js"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -38,16 +39,10 @@ export default function SignupPage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!")
-      return
-    }
-    // In a real app, you would handle registration here
-    console.log("Registration attempt:", formData)
-    // For demo purposes, redirect to the main page
-    router.push("/tweet")
+      await handleregister(formData)
+      router.push("/login")
   }
 
   return (
@@ -61,7 +56,7 @@ export default function SignupPage() {
         </div>
 
         {/* Sign Up Form */}
-        <div className="bg-white rounded-3xl p-8 shadow-lg">
+        <div className="bg-white rounded-3xl p-8 shadow-2xl shadow-[#F394A9]">
           <div className="mb-6">
             <button onClick={handleBack} className="mb-4">
               <ArrowLeft className="w-6 h-6 text-gray-600" />
@@ -109,7 +104,7 @@ export default function SignupPage() {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-[#f74e6d] text-white rounded-full font-medium hover:bg-[#f74e6d]/90 transition-colors"
+                className="w-full py-3 bg-linear-to-r from-[#F2A9BB] to-[#F74E6D] text-white rounded-full font-medium hover:bg-[#f74e6d]/90 transition-colors"
               >
                 Next
               </button>
@@ -168,7 +163,7 @@ export default function SignupPage() {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-[#f74e6d] text-white rounded-full font-medium hover:bg-[#f74e6d]/90 transition-colors"
+                className="w-full py-3 bg-linear-to-r from-[#F2A9BB] to-[#F74E6D] text-white rounded-full font-medium hover:bg-[#f74e6d]/90 transition-colors"
               >
                 Sign up
               </button>
