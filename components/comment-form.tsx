@@ -1,23 +1,51 @@
-"use client"
+"use client";
 
-import type React from "react"
+import { createComment, getProfile } from "@/services/api";
+import type React from "react";
 
-import { useState } from "react"
+import { useState } from "react";
 
 interface CommentFormProps {
-  onSubmit: (content: string) => void
+  tweet_id: number;
+  onSubmit: (content: string) => void;
 }
 
-export function CommentForm({ onSubmit }: CommentFormProps) {
-  const [content, setContent] = useState("")
+export function CommentForm({ tweet_id, onSubmit }: CommentFormProps) {
+  const [content, setContent] = useState("");
+  const [me, setMe] = useState<any>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (content.trim()) {
-      onSubmit(content)
-      setContent("")
+      onSubmit(content);
+      setContent("");
     }
-  }
+    createComments();
+  };
+  const fetchMe = async () => {
+    try {
+      const res = await getProfile();
+      setMe(res.data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+  const createComments = async () => {
+    try {
+      const res = await createComment({
+        tweet_id: parseInt(tweet_id),
+        comment: content,
+        author_id: me?.ID,
+      });
+      console.log("Comment created successfully:", res.data);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+    }
+  };
+
+  useState(() => {
+    fetchMe();
+  });
 
   return (
     <form onSubmit={handleSubmit} className="mt-6">
@@ -40,5 +68,5 @@ export function CommentForm({ onSubmit }: CommentFormProps) {
         </div>
       </div>
     </form>
-  )
+  );
 }

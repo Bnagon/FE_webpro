@@ -1,12 +1,11 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { loginUser } from "@/services/api"
 import { ArrowLeft, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { handleLogin } from "../../lib/login.js"
+import type React from "react"
+import { useState } from "react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,7 +15,11 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await handleLogin({ email, password })
+    console.log({ email, password })
+    const res = await loginUser({ email, password })
+    if(res.data){
+      localStorage.setItem("token", res.data)
+    }
     router.push("/tweet")
   }
 
@@ -37,8 +40,7 @@ export default function LoginPage() {
               <ArrowLeft className="w-6 h-6 text-gray-600" />
             </button>
             <h2 className="text-2xl font-bold mb-2">Sign in</h2>
-            <p className="text-gray-600">
-              Don't have an account{" "}
+            <p className="text-gray-600">Don&#39;t have an account{" "}
               <Link href="/signup" className="text-[#f74e6d] font-medium">
                 Sign Up
               </Link>

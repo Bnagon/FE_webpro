@@ -1,20 +1,21 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { Heart } from "lucide-react"
+import { Heart } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface EventCardProps {
-  id?: string | number
-  title?: string
-  date?: string
-  imageUrl?: string
-  href?: string
-  isFavorited?: boolean
-  onToggleFavorite?: (id: string | number) => void
-  currentUserId?: string
+  id?: string | number;
+  title?: string;
+  date?: string;
+  imageUrl?: string;
+  description?: string;
+  href?: string;
+  isFavorited?: boolean;
+  onToggleFavorite?: (id: string | number) => void;
+  currentUserId?: string;
 }
 
 export function EventCard({
@@ -26,17 +27,17 @@ export function EventCard({
   onToggleFavorite,
   currentUserId = "user_john", // Default for demo
 }: EventCardProps) {
-  const router = useRouter()
+  const router = useRouter();
 
   const handleClick = () => {
-    router.push(`/event/${id}`)
-  }
+    router.push(`/event/${id}`);
+  };
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent navigation when clicking favorite button
+    e.stopPropagation(); // Prevent navigation when clicking favorite button
 
     if (onToggleFavorite) {
-      onToggleFavorite(id)
+      onToggleFavorite(id);
     }
 
     // In a real app, you would call the API to add/remove like
@@ -56,7 +57,9 @@ export function EventCard({
           })
         })
         */
-        console.log(`Adding like: user_id=${currentUserId}, content_type=event, content_id=${id}`)
+        console.log(
+          `Adding like: user_id=${currentUserId}, content_type=event, content_id=${id}`
+        );
       } else {
         // Remove like
         /*
@@ -72,12 +75,14 @@ export function EventCard({
           })
         })
         */
-        console.log(`Removing like: user_id=${currentUserId}, content_type=event, content_id=${id}`)
+        console.log(
+          `Removing like: user_id=${currentUserId}, content_type=event, content_id=${id}`
+        );
       }
     } catch (error) {
-      console.error("Error updating like:", error)
+      console.error("Error updating like:", error);
     }
-  }
+  };
 
   return (
     <div
@@ -107,7 +112,11 @@ export function EventCard({
             onClick={handleFavoriteClick}
             className="absolute top-2 right-2 p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
           >
-            <Heart className={`w-5 h-5 ${isFavorited ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
+            <Heart
+              className={`w-5 h-5 ${
+                isFavorited ? "fill-red-500 text-red-500" : "text-gray-600"
+              }`}
+            />
           </button>
         )}
       </div>
@@ -116,5 +125,5 @@ export function EventCard({
         <p className="text-sm text-[#1e1e1e]">Date: {date}</p>
       </div>
     </div>
-  )
+  );
 }

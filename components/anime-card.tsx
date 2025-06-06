@@ -1,46 +1,47 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { StarRating } from "./star-rating"
-import { Heart } from "lucide-react"
+import { Heart } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { StarRating } from "./star-rating";
 
 interface AnimeCardProps {
-  id: string | number
-  title: string
-  posterUrl?: string
-  averageRating: number
-  reviewCount: number
-  genre?: string
-  isFavorited?: boolean
-  onToggleFavorite?: (id: string | number) => void
-  currentUserId?: string
+  id: string | number;
+  title: string;
+  posterUrl?: string;
+  rating: number;
+  reviewCount: number;
+  genre?: string;
+  isFavorited?: boolean;
+  onToggleFavorite?: (id: string | number) => void;
+  currentUserId?: string;
 }
 
 export function AnimeCard({
   id,
   title,
   posterUrl,
-  averageRating,
+  rating,
   reviewCount,
   genre,
   isFavorited,
   onToggleFavorite,
   currentUserId = "user_john", // Default for demo
 }: AnimeCardProps) {
-  const router = useRouter()
+  const router = useRouter();
 
   const handleClick = () => {
-    router.push(`/anime/${id}`)
-  }
+    router.push(`/anime/${id}`);
+  };
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent navigation when clicking favorite button
+    e.stopPropagation(); // Prevent navigation when clicking favorite button
 
     if (onToggleFavorite) {
-      onToggleFavorite(id)
+      onToggleFavorite(id);
     }
 
     // In a real app, you would call the API to add/remove like
@@ -60,7 +61,9 @@ export function AnimeCard({
           })
         })
         */
-        console.log(`Adding like: user_id=${currentUserId}, content_type=anime, content_id=${id}`)
+        console.log(
+          `Adding like: user_id=${currentUserId}, content_type=anime, content_id=${id}`
+        );
       } else {
         // Remove like
         /*
@@ -76,12 +79,17 @@ export function AnimeCard({
           })
         })
         */
-        console.log(`Removing like: user_id=${currentUserId}, content_type=anime, content_id=${id}`)
+        console.log(
+          `Removing like: user_id=${currentUserId}, content_type=anime, content_id=${id}`
+        );
       }
     } catch (error) {
-      console.error("Error updating like:", error)
+      console.error("Error updating like:", error);
     }
-  }
+  };
+  useEffect(() => {
+    console.log(`rating: ${rating}`);
+  }, []);
 
   return (
     <div
@@ -112,20 +120,26 @@ export function AnimeCard({
             onClick={handleFavoriteClick}
             className="absolute top-2 right-2 p-2 bg-white/80 rounded-full hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
           >
-            <Heart className={`w-5 h-5 ${isFavorited ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
+            <Heart
+              className={`w-5 h-5 ${
+                isFavorited ? "fill-red-500 text-red-500" : "text-gray-600"
+              }`}
+            />
           </button>
         )}
       </div>
 
       <div className="p-4">
-        <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-[#f74e6d] transition-colors">{title}</h3>
+        <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-[#f74e6d] transition-colors">
+          {title}
+        </h3>
 
         {genre && <p className="text-sm text-gray-600 mb-2">{genre}</p>}
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <StarRating rating={averageRating} size="sm" />
-            <span className="text-sm font-medium">{averageRating.toFixed(1)}</span>
+            <StarRating rating={rating} size="sm" />
+            {/* <span className="text-sm font-medium">{averageRating.toFixed(1)}</span> */}
           </div>
         </div>
         <span className="text-sm text-gray-500">
@@ -133,5 +147,5 @@ export function AnimeCard({
         </span>
       </div>
     </div>
-  )
+  );
 }

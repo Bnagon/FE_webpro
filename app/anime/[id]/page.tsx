@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { ArrowLeft, Edit3, Heart } from "lucide-react"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { Header } from "@/components/header"
-import { BottomNav } from "@/components/bottom-nav"
-import { StarRating } from "@/components/star-rating"
-import { ReviewCard } from "@/components/review-card"
-import { ReviewForm } from "@/components/review-form"
+import { BottomNav } from "@/components/bottom-nav";
+import { ReviewCard } from "@/components/review-card";
+import { ReviewForm } from "@/components/review-form";
+import { StarRating } from "@/components/star-rating";
+import { getAnimeById, getProfile } from "@/services/api";
+import { ArrowLeft, Edit3, Heart } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 // Sample anime data with detailed information
 const animeData = {
@@ -41,187 +41,128 @@ const animeData = {
     year: "2019-Present",
   },
   // Add more anime data as needed...
-}
+};
 
 // Sample reviews data
-const reviewsData = {
-  1: [
-    {
-      id: 101,
-      username: "AnimeOtaku2023",
-      rating: 5,
-      reviewText:
-        "Absolutely phenomenal series! The character development, especially Eren's transformation throughout the series, is masterfully done. The plot twists kept me on the edge of my seat.",
-      date: "2023-12-15",
-      avatarUrl: "",
-    },
-    {
-      id: 102,
-      username: "TitanSlayer",
-      rating: 5,
-      reviewText:
-        "One of the best anime ever created. The animation quality in the final seasons is incredible, and the story conclusion was satisfying despite being controversial.",
-      date: "2023-12-10",
-      avatarUrl: "",
-    },
-    {
-      id: 103,
-      username: "CasualViewer",
-      rating: 4,
-      reviewText:
-        "Great anime overall, though the final season felt a bit rushed. The emotional impact of certain scenes is undeniable. Highly recommend for action anime fans.",
-      date: "2023-12-05",
-      avatarUrl: "",
-    },
-    {
-      id: 104,
-      username: "MangaReader",
-      rating: 5,
-      reviewText:
-        "As someone who read the manga, I was worried about the adaptation, but they did an amazing job. The voice acting and soundtrack are top-tier.",
-      date: "2023-11-28",
-      avatarUrl: "",
-    },
-  ],
-  2: [
-    {
-      id: 201,
-      username: "SwordMaster",
-      rating: 5,
-      reviewText:
-        "The animation by Ufotable is absolutely stunning! Every fight scene is a work of art. Tanjiro is such a pure-hearted protagonist.",
-      date: "2023-12-12",
-      avatarUrl: "",
-    },
-    {
-      id: 202,
-      username: "DemonHunter",
-      rating: 4,
-      reviewText:
-        "Beautiful animation and great character designs. The story is straightforward but executed very well. Looking forward to more seasons!",
-      date: "2023-12-08",
-      avatarUrl: "",
-    },
-  ],
-}
 
-export default function AnimeDetailPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [username, setUsername] = useState("JohnDoe")
-  const [anime, setAnime] = useState<any>(null)
-  const [reviews, setReviews] = useState<any[]>([])
-  const [showReviewForm, setShowReviewForm] = useState(false)
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">("newest")
-  const [isFavorited, setIsFavorited] = useState(false)
+export default function AnimeDetailPage({
+  params: paramsPromise,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const params = React.use(paramsPromise);
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [anime, setAnime] = useState<any>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [sortBy, setSortBy] = useState<
+    "newest" | "oldest" | "highest" | "lowest"
+  >("newest");
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [me, setMe] = useState<{ ID: string } | null>(null);
+  const [review, setReview] = useState();
 
+  const getReviewsByAnimeId = async (animeId: string) => {
+    try {
+      const res = await getAnimeById(animeId);
+      setReviews(res.data.reviews || []);
+      console.log("Fetched reviews:", res.data.reviews);
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+    }
+  };
   useEffect(() => {
-    // In a real app, you would fetch the anime and reviews from an API
-    const animeId = Number.parseInt(params.id)
-    const foundAnime = animeData[animeId as keyof typeof animeData]
-    const animeReviews = reviewsData[animeId as keyof typeof reviewsData] || []
-
-    if (foundAnime) {
-      setAnime(foundAnime)
-      setReviews(animeReviews)
-    }
-  }, [params.id])
-
-  const handleReviewSubmit = (rating: number, reviewText: string) => {
-    if (!isLoggedIn) {
-      alert("Please log in to submit a review")
-      return
-    }
-
-    const newReview = {
-      id: Date.now(),
-      username,
-      rating,
-      reviewText,
-      date: new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }),
-      avatarUrl: "",
-    }
-
-    setReviews([newReview, ...reviews])
-    setShowReviewForm(false)
-
-    // Update anime rating (simplified calculation)
-    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0) + rating
-    const newAverageRating = totalRating / (reviews.length + 1)
-    setAnime({
-      ...anime,
-      averageRating: newAverageRating,
-      reviewCount: anime.reviewCount + 1,
-    })
-  }
+    fetchMe();
+    fetchAnime();
+  }, []);
 
   const handleToggleFavorite = () => {
     if (!isLoggedIn) {
-      alert("Please log in to favorite this anime")
-      return
+      alert("Please log in to favorite this anime");
+      return;
     }
-    setIsFavorited(!isFavorited)
-  }
+    setIsFavorited(!isFavorited);
+  };
 
   // Sort reviews based on selected criteria
   const sortedReviews = [...reviews].sort((a, b) => {
     switch (sortBy) {
       case "newest":
-        return new Date(b.date).getTime() - new Date(a.date).getTime()
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
       case "oldest":
-        return new Date(a.date).getTime() - new Date(b.date).getTime()
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
       case "highest":
-        return b.rating - a.rating
+        return b.rating - a.rating;
       case "lowest":
-        return a.rating - b.rating
+        return a.rating - b.rating;
       default:
-        return 0
+        return 0;
     }
-  })
+  });
+  const fetchMe = async () => {
+    try {
+      const res = await getProfile();
+      setMe(res.data);
+      console.log("Fetched user profile:", res.data);
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  };
+  const fetchAnime = async () => {
+    try {
+      const res = await getAnimeById((await params).id);
+      setAnime(res.data);
+      console.log(res.data);
+    } catch (err) {
+      console.error("Error fetching anime:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMe();
+    fetchAnime();
+    getReviewsByAnimeId(params.id);
+  }, []);
 
   if (!anime) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fce4ec" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#fce4ec" }}
+      >
         <p>Anime not found</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fce4ec" }}>
-      <Header isLoggedIn={isLoggedIn} username={username} />
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 max-w-6xl pb-24">
         {/* Back button */}
-        <button onClick={() => router.back()} className="flex items-center gap-1 mb-6 text-[#526e0c] hover:underline">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1 mb-6 text-[#526e0c] hover:underline"
+        >
           <ArrowLeft className="w-4 h-4" />
           Back to Reviews
         </button>
 
         {/* Demo toggle for logged in state */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
-          <button onClick={() => setIsLoggedIn(!isLoggedIn)} className="px-4 py-2 bg-[#526e0c] text-white rounded-md">
-            {isLoggedIn ? "Simulate Logout" : "Simulate Login"}
-          </button>
-          {isLoggedIn && (
-            <p className="mt-2 text-sm">
-              Logged in as <strong>{username}</strong>
-            </p>
-          )}
-        </div>
 
         {/* Anime Details */}
         <div className="bg-white rounded-3xl p-6 shadow-md mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Poster */}
             <div className="aspect-[3/4] relative overflow-hidden rounded-lg">
-              {anime.posterUrl ? (
-                <Image src={anime.posterUrl || "/placeholder.svg"} alt={anime.title} fill className="object-cover" />
+              {anime.anime_image ? (
+                <Image
+                  src={anime.anime_image || "/placeholder.svg"}
+                  alt={anime.title}
+                  fill
+                  className="object-cover"
+                />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
                   <div className="text-white text-center p-4">
@@ -238,8 +179,10 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex items-center gap-2">
-                  <StarRating rating={anime.averageRating} size="lg" />
-                  <span className="text-xl font-semibold">{anime.averageRating.toFixed(1)}</span>
+                  <StarRating rating={anime.rating} size="lg" />
+                  <span className="text-xl font-semibold">
+                    {/* {anime.averageRating.toFixed(1)} */}
+                  </span>
                 </div>
                 <span className="text-gray-600">
                   {anime.reviewCount} review{anime.reviewCount !== 1 ? "s" : ""}
@@ -249,7 +192,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
               <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
                 <div>
                   <span className="font-semibold text-gray-700">Genre:</span>
-                  <p className="text-gray-600">{anime.genre}</p>
+                  <p className="text-gray-600">{anime.genres}</p>
                 </div>
                 <div>
                   <span className="font-semibold text-gray-700">Episodes:</span>
@@ -267,27 +210,39 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
               <div className="mb-6">
                 <h3 className="font-semibold text-gray-700 mb-2">Synopsis</h3>
-                <p className="text-gray-600 leading-relaxed">{anime.synopsis}</p>
+                <p className="text-gray-600 leading-relaxed">
+                  {anime.description}
+                </p>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowReviewForm(true)}
-                  disabled={!isLoggedIn}
+                  disabled={!me}
                   className="flex items-center gap-2 px-6 py-3 bg-[#f74e6d] text-white rounded-full hover:bg-[#f74e6d]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Edit3 className="w-5 h-5" />
                   Write a Review
                 </button>
 
-                <button
+                {/* <button
                   onClick={handleToggleFavorite}
                   className="p-3 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors"
                 >
-                  <Heart className={`w-6 h-6 ${isFavorited ? "fill-red-500 text-red-500" : "text-gray-400"}`} />
-                </button>
+                  <Heart
+                    className={`w-6 h-6 ${
+                      isFavorited
+                        ? "fill-red-500 text-red-500"
+                        : "text-gray-400"
+                    }`}
+                  />
+                </button> */}
               </div>
-              {!isLoggedIn && <p className="text-sm text-gray-500 mt-2">Please log in to write a review</p>}
+              {!isLoggedIn && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Please log in to write a review
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -295,12 +250,18 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
         {/* Reviews Section */}
         <div className="bg-white rounded-3xl p-6 shadow-md">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Community Reviews ({reviews.length})</h2>
+            <h2 className="text-2xl font-bold">
+              Community Reviews ({reviews.length})
+            </h2>
 
             {reviews.length > 0 && (
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as "newest" | "oldest" | "highest" | "lowest")}
+                onChange={(e) =>
+                  setSortBy(
+                    e.target.value as "newest" | "oldest" | "highest" | "lowest"
+                  )
+                }
                 className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f74e6d] focus:border-transparent"
               >
                 <option value="newest">Newest First</option>
@@ -313,20 +274,24 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
           {sortedReviews.length > 0 ? (
             <div>
-              {sortedReviews.map((review) => (
+              {sortedReviews.map((review, index) => (
                 <ReviewCard
-                  key={review.id}
-                  username={review.username}
+                  key={index}
+                  username={
+                    review.author?.username || review.username || "Anonymous"
+                  }
                   rating={review.rating}
-                  reviewText={review.reviewText}
+                  reviewText={review.review}
                   date={review.date}
-                  avatarUrl={review.avatarUrl}
+                  avatarUrl={review.author?.user_image || ""}
                 />
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No reviews yet. Be the first to review this anime!</p>
+              <p className="text-gray-500 mb-4">
+                No reviews yet. Be the first to review this anime!
+              </p>
               <button
                 onClick={() => setShowReviewForm(true)}
                 disabled={!isLoggedIn}
@@ -341,10 +306,14 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
       {/* Review Form Modal */}
       {showReviewForm && (
-        <ReviewForm animeTitle={anime.title} onSubmit={handleReviewSubmit} onClose={() => setShowReviewForm(false)} />
+        <ReviewForm
+          animeID={params.id}
+          animeTitle={anime.title}
+          onClose={() => setShowReviewForm(false)}
+        />
       )}
 
       <BottomNav />
     </div>
-  )
+  );
 }

@@ -1,98 +1,111 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useRef } from "react"
-import { Camera, X } from "lucide-react"
-import Image from "next/image"
+import { getProfile, updateProfile } from "@/services/api";
+import { Camera, X } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface ProfileEditFormProps {
   initialData: {
-    username: string
-    email: string
-    bio: string
-    location: string
-  }
-  onSave: (data: any) => void
-  onCancel: () => void
+    username: string;
+    email: string;
+  };
+  onSave: (data: any) => void;
+  onCancel: () => void;
 }
-
-export function ProfileEditForm({ initialData, onSave, onCancel }: ProfileEditFormProps) {
-  const [formData, setFormData] = useState(initialData)
-  const [avatar, setAvatar] = useState<File | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string>("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
+export function ProfileEditForm({
+  initialData,
+  onSave,
+  onCancel,
+}: ProfileEditFormProps) {
+  const router = useRouter();
+  const [formData, setFormData] = useState(initialData);
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const user = new FormData();
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setAvatar(file)
-      setAvatarPreview(URL.createObjectURL(file))
+      const file = e.target.files[0];
+      setAvatar(file);
+      setAvatarPreview(URL.createObjectURL(file));
     }
-  }
+  };
 
   const handleRemoveAvatar = () => {
-    setAvatar(null)
+    setAvatar(null);
     if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
-      setAvatarPreview("")
+      URL.revokeObjectURL(avatarPreview);
+      setAvatarPreview("");
     }
-  }
+  };
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [profilePic, setProfilePic] = useState("/usericon.png");
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getProfile();
+        const profile = data.data || {};
 
+        setUsername(profile.username || "");
+        setEmail(profile.email || "");
+
+        if (profile.user_image) {
+          setProfilePic(profile.user_image);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const imageUrl = URL.createObjectURL(file);
+      console.log(imageUrl);
+      setProfilePic(imageUrl);
+    }
+  };
   const handleSave = async () => {
-  try {
-    // Create form data for avatar upload + other fields
-    const formPayload = new FormData()
-    formPayload.append("username", formData.username)
-    formPayload.append("email", formData.email)
-    formPayload.append("bio", formData.bio)
-    formPayload.append("location", formData.location)
-    if (avatar) {
-      formPayload.append("avatar", avatar)
+    user.append("username", formData.username);
+    user.append("email", formData.email);
+
+    if (selectedFile) {
+      user.append("user_image", selectedFile);
+    } else {
+      user.append("user_image", profilePic);
     }
-
-    const token = localStorage.getItem("token")
-
-    const res = await fetch("http://localhost:8081/me", {
-      method: "PUT", // or POST depending on your backend
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Do NOT set Content-Type header manually when using FormData
-      },
-      body: formPayload,
-    })
-
-    if (!res.ok) {
-      throw new Error("Failed to update profile")
+    console.log(user);
+    try {
+      const res = await updateProfile(user);
+      console.log("Profile updated successfully:", res.data);
+      alert("บันทึกข้อมูลเรียบร้อยแล้ว");
+      router.push("/profile");
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดขณะบันทึกข้อมูล");
+      console.error("Save error:", error);
     }
-
-    const updatedData = await res.json()
-
-    // Optionally update UI or notify user on success
-    onSave(updatedData)
-
-    // Clean up object URL
-    if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
-    }
-  } catch (error) {
-    console.error("Error updating profile:", error)
-    // Optionally show error to user
-  }
-}
-
-
+  };
   const handleCancel = () => {
     // Clean up object URL
     if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
+      URL.revokeObjectURL(avatarPreview);
     }
-    onCancel()
-  }
+    onCancel();
+  };
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-md border-2 border-[#f74e6d]">
@@ -123,9 +136,20 @@ export function ProfileEditForm({ initialData, onSave, onCancel }: ProfileEditFo
             )}
           </div>
           <div>
-            <input type="file" ref={fileInputRef} onChange={handleAvatarSelect} accept="image/*" className="hidden" />
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={(e) => {
+                handleAvatarSelect(e);
+                handleImageChange(e);
+              }}
+              accept="image/*"
+              // accept="image/*"
+              className="hidden"
+            />
             <button
               onClick={() => fileInputRef.current?.click()}
+              onChange={handleImageChange}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
             >
               <Camera className="w-4 h-4" />
@@ -136,7 +160,10 @@ export function ProfileEditForm({ initialData, onSave, onCancel }: ProfileEditFo
 
         {/* Username */}
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="username"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Username
           </label>
           <input
@@ -150,7 +177,10 @@ export function ProfileEditForm({ initialData, onSave, onCancel }: ProfileEditFo
 
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Email
           </label>
           <input
@@ -161,23 +191,6 @@ export function ProfileEditForm({ initialData, onSave, onCancel }: ProfileEditFo
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f74e6d] focus:border-transparent"
           />
         </div>
-
-        {/* Bio */}
-        <div>
-          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-2">
-            Bio
-          </label>
-          <textarea
-            id="bio"
-            value={formData.bio}
-            onChange={(e) => handleInputChange("bio", e.target.value)}
-            rows={3}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f74e6d] focus:border-transparent"
-            placeholder="Tell us about yourself..."
-          />
-        </div>
-
-
         {/* Action Buttons */}
         <div className="flex justify-end gap-3">
           <button
@@ -195,5 +208,5 @@ export function ProfileEditForm({ initialData, onSave, onCancel }: ProfileEditFo
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,84 +1,87 @@
-"use client"
+"use client";
 
-import { Search, User, Menu } from "lucide-react"
-import Link from "next/link"
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { jwtDecode } from "jwt-decode"
+import { getProfile, logoutUser } from "@/services/api";
+import { Menu, Search, User } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface HeaderProps {}
 
 interface DecodedToken {
-  email: string
-  exp: number
+  email: string;
+  exp: number;
 }
 
 export function Header({}: HeaderProps) {
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [searchType, setSearchType] = useState<"tweet" | "event">("tweet")
-  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [username, setUsername] = useState("User")
-  const router = useRouter()
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [searchType, setSearchType] = useState<"tweet" | "event">("tweet");
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [username, setUsername] = useState("User");
+  const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
 
-useEffect(() => {
-  const fetchUser = async () => {
-    const token = localStorage.getItem("token")
-    if (!token) return
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      setToken(token);
+      if (!token) {
+        return;
+      }
 
-    try {
-      const res = await fetch("http://localhost:8081/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      try {
+        const res = await getProfile();
+        console.log(res.data.username);
+        setUsername(res.data.username || "User");
+      } catch (err) {
+        console.error("Error fetching user", err);
+      }
+    };
 
-      if (!res.ok) throw new Error("Failed to fetch user")
-
-      const data = await res.json()
-      setUsername(data.name || "User")
-      setIsLoggedIn(true)
-    } catch (err) {
-      console.error("Error fetching user", err)
-      localStorage.removeItem("token")
-      setIsLoggedIn(false)
-    }
-  }
-
-  fetchUser()
-}, [])
-
+    fetchUser();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (searchQuery.trim()) {
       if (searchType === "tweet") {
-        router.push(`/tweet?search=${encodeURIComponent(searchQuery.trim())}`)
+        router.push(`/tweet?search=${encodeURIComponent(searchQuery.trim())}`);
       } else {
-        router.push(`/event?search=${encodeURIComponent(searchQuery.trim())}`)
+        router.push(`/event?search=${encodeURIComponent(searchQuery.trim())}`);
       }
     }
-  }
+  };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token")
-    setIsLoggedIn(false)
-    setUsername("User")
-    router.push("/tweet")
-  }
+  const handleLogout = async () => {
+    localStorage.removeItem("token");
+    await logoutUser();
+    setToken(null);
+    setUsername("User");
+    router.push("/tweet");
+  };
 
   return (
     <>
       {/* Header */}
       <header className="container mx-auto py-4 px-4 flex items-center justify-between">
-        <Link href="/tweet" className="flex items-center hover:opacity-80 transition-opacity">
-          <img src="/logo.svg" alt="Komyuniti" className="h-8 w-auto sm:h-10 md:h-12 lg:h-14" />
+        <Link
+          href="/tweet"
+          className="flex items-center hover:opacity-80 transition-opacity"
+        >
+          <img
+            src="/logo.svg"
+            alt="Komyuniti"
+            className="h-8 w-auto sm:h-10 md:h-12 lg:h-14"
+          />
         </Link>
 
         {/* Search Box */}
         <div className="relative max-w-md w-full mx-4 hidden md:block">
-          <form onSubmit={handleSearch} className="flex items-center bg-white rounded-full">
+          <form
+            onSubmit={handleSearch}
+            className="flex items-center bg-white rounded-full"
+          >
             {/* Dropdown */}
             <div className="relative">
               <button
@@ -96,8 +99,8 @@ useEffect(() => {
                       key={type}
                       type="button"
                       onClick={() => {
-                        setSearchType(type as any)
-                        setIsSearchDropdownOpen(false)
+                        setSearchType(type as "tweet" | "event");
+                        setIsSearchDropdownOpen(false);
                       }}
                       className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
                         searchType === type ? "bg-gray-50 font-medium" : ""
@@ -125,19 +128,22 @@ useEffect(() => {
 
         {/* Right Side */}
         <div className="flex items-center gap-2">
-          {isLoggedIn ? (
-            <div className="relative">
-              <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#F2A9BB] to-[#F74E6D] text-white hover:bg-[#f74e6d]/90"
-              >
+          {token ? (
+            <div
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="relative"
+            >
+              <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#F2A9BB] to-[#F74E6D] text-white hover:bg-[#f74e6d]/90">
                 <User className="w-4 h-4" />
                 <span>{username}</span>
               </button>
 
               {isProfileOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                  <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <Link
+                    href="/profile"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
                     Profile
                   </Link>
                   <button
@@ -168,5 +174,5 @@ useEffect(() => {
         </div>
       </header>
     </>
-  )
+  );
 }

@@ -1,69 +1,68 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useRef } from "react"
-import { Calendar, Clock, MapPin, ImageIcon, X } from "lucide-react"
-import Image from "next/image"
+import { createEvent } from "@/services/api";
+import { Calendar, Clock, ImageIcon, MapPin, X } from "lucide-react";
+import Image from "next/image";
+import { useRef, useState } from "react";
 
 interface EventFormProps {
   onSubmit: (eventData: {
-    title: string
-    date: string
-    time: string
-    location: string
-    description: string
-    images: File[]
-  }) => void
-  onCancel: () => void
+    title: string;
+    date: string;
+    time: string;
+    location: string;
+    description: string;
+    images: File[];
+  }) => void;
+  onCancel: () => void;
 }
 
-export function EventForm({ onSubmit, onCancel }: EventFormProps) {
-  const [title, setTitle] = useState("")
-  const [date, setDate] = useState("")
-  const [time, setTime] = useState("")
-  const [location, setLocation] = useState("")
-  const [description, setDescription] = useState("")
-  const [images, setImages] = useState<File[]>([])
-  const [imagePreviews, setImagePreviews] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+export function EventForm({ userID, onSubmit, onCancel }: EventFormProps) {
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [location, setLocation] = useState("");
+  const [description, setDescription] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newImages = Array.from(e.target.files)
-      setImages((prev) => [...prev, ...newImages])
+      const newImages = Array.from(e.target.files);
+      setImages((prev) => [...prev, ...newImages]);
 
       // Create preview URLs
-      const newPreviews = newImages.map((file) => URL.createObjectURL(file))
-      setImagePreviews((prev) => [...prev, ...newPreviews])
+      const newPreviews = newImages.map((file) => URL.createObjectURL(file));
+      setImagePreviews((prev) => [...prev, ...newPreviews]);
     }
-  }
+  };
 
   const handleRemoveImage = (index: number) => {
     // Revoke the object URL to avoid memory leaks
-    URL.revokeObjectURL(imagePreviews[index])
+    URL.revokeObjectURL(imagePreviews[index]);
 
     // Remove the image and its preview
-    setImages((prev) => prev.filter((_, i) => i !== index))
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index))
-  }
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit({
-      title,
-      date,
-      time,
-      location,
-      description,
-      images,
-    })
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("date_time", `${date}T${time}:00Z`); // Append ":00Z" for seconds and UTC timezone
+    formData.append("location", location);
+    formData.append("description", description);
+    formData.append("author_id", userID);
+    formData.append("event_image", images[0]); // Assuming you want to upload the first image
+    const res = await createEvent(formData);
+    console.log(res);
+  };
 
-    // Revoke all object URLs
-    imagePreviews.forEach(URL.revokeObjectURL)
-  }
-
-  const isFormValid = title && date && location && description
+  const isFormValid = title && date && location && description;
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-md">
@@ -73,7 +72,10 @@ export function EventForm({ onSubmit, onCancel }: EventFormProps) {
         <div className="space-y-4">
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Event Title*
             </label>
             <input
@@ -90,7 +92,10 @@ export function EventForm({ onSubmit, onCancel }: EventFormProps) {
           {/* Date and Time */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="date"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Date*
               </label>
               <div className="relative">
@@ -109,7 +114,10 @@ export function EventForm({ onSubmit, onCancel }: EventFormProps) {
             </div>
 
             <div>
-              <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="time"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Time
               </label>
               <div className="relative">
@@ -129,7 +137,10 @@ export function EventForm({ onSubmit, onCancel }: EventFormProps) {
 
           {/* Location */}
           <div>
-            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="location"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Location*
             </label>
             <div className="relative">
@@ -150,7 +161,10 @@ export function EventForm({ onSubmit, onCancel }: EventFormProps) {
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Description*
             </label>
             <textarea
@@ -166,7 +180,9 @@ export function EventForm({ onSubmit, onCancel }: EventFormProps) {
 
           {/* Images */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Images</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Event Images
+            </label>
             <div className="mt-1 flex items-center">
               <input
                 type="file"
@@ -233,5 +249,5 @@ export function EventForm({ onSubmit, onCancel }: EventFormProps) {
         </div>
       </form>
     </div>
-  )
+  );
 }

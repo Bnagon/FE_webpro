@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Search, Filter } from "lucide-react"
-import { Header } from "@/components/header"
-import { BottomNav } from "@/components/bottom-nav"
-import { AnimeCard } from "@/components/anime-card"
+import { AnimeCard } from "@/components/anime-card";
+import { BottomNav } from "@/components/bottom-nav";
+import { Header } from "@/components/header";
+import { getAllAnimes, getProfile } from "@/services/api";
+import { Filter, Search } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Sample anime data
 const animeList = [
@@ -25,7 +26,8 @@ const animeList = [
     averageRating: 4.6,
     reviewCount: 892,
     genre: "Action, Supernatural",
-    synopsis: "A young boy becomes a demon slayer to save his sister and avenge his family.",
+    synopsis:
+      "A young boy becomes a demon slayer to save his sister and avenge his family.",
   },
   {
     id: 3,
@@ -34,7 +36,8 @@ const animeList = [
     averageRating: 4.4,
     reviewCount: 1156,
     genre: "Action, School, Superhero",
-    synopsis: "In a world where most people have superpowers, a powerless boy dreams of becoming a hero.",
+    synopsis:
+      "In a world where most people have superpowers, a powerless boy dreams of becoming a hero.",
   },
   {
     id: 4,
@@ -43,7 +46,8 @@ const animeList = [
     averageRating: 4.7,
     reviewCount: 743,
     genre: "Action, Supernatural, School",
-    synopsis: "Students at a school for jujutsu sorcerers learn to combat cursed spirits.",
+    synopsis:
+      "Students at a school for jujutsu sorcerers learn to combat cursed spirits.",
   },
   {
     id: 5,
@@ -52,7 +56,8 @@ const animeList = [
     averageRating: 4.9,
     reviewCount: 2134,
     genre: "Adventure, Comedy, Action",
-    synopsis: "A young pirate searches for the ultimate treasure known as One Piece.",
+    synopsis:
+      "A young pirate searches for the ultimate treasure known as One Piece.",
   },
   {
     id: 6,
@@ -61,7 +66,8 @@ const animeList = [
     averageRating: 4.5,
     reviewCount: 1876,
     genre: "Action, Adventure, Martial Arts",
-    synopsis: "A young ninja seeks recognition and dreams of becoming the Hokage.",
+    synopsis:
+      "A young ninja seeks recognition and dreams of becoming the Hokage.",
   },
   {
     id: 7,
@@ -80,46 +86,75 @@ const animeList = [
     averageRating: 4.9,
     reviewCount: 987,
     genre: "Adventure, Family, Fantasy",
-    synopsis: "A young girl enters a world ruled by gods and witches where humans are changed into beasts.",
+    synopsis:
+      "A young girl enters a world ruled by gods and witches where humans are changed into beasts.",
   },
-]
+];
 
 export default function ReviewsPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [username, setUsername] = useState("JohnDoe")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<"rating" | "reviews" | "title">("rating")
-  const [favoritedAnime, setFavoritedAnime] = useState<number[]>([])
-
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState("JohnDoe");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"rating" | "reviews" | "title">(
+    "rating"
+  );
+  const [favoritedAnime, setFavoritedAnime] = useState<number[]>([]);
+  const [me, setMe] = useState(null);
+  const [reviews, setReviews] = useState<any>([]);
   const handleToggleFavorite = (animeId: string | number) => {
     if (!isLoggedIn) {
-      alert("Please log in to favorite anime")
-      return
+      alert("Please log in to favorite anime");
+      return;
     }
 
-    const id = Number(animeId)
-    setFavoritedAnime((prev) => (prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]))
-  }
+    const id = Number(animeId);
+    setFavoritedAnime((prev) =>
+      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
+    );
+  };
 
   // Filter and sort anime based on search and sort criteria
   const filteredAndSortedAnime = animeList
     .filter(
       (anime) =>
         anime.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        anime.genre.toLowerCase().includes(searchQuery.toLowerCase()),
+        anime.genre.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
       switch (sortBy) {
         case "rating":
-          return b.averageRating - a.averageRating
+          return b.averageRating - a.averageRating;
         case "reviews":
-          return b.reviewCount - a.reviewCount
+          return b.reviewCount - a.reviewCount;
         case "title":
-          return a.title.localeCompare(b.title)
+          return a.title.localeCompare(b.title);
         default:
-          return 0
+          return 0;
       }
-    })
+    });
+  const fetchMe = async () => {
+    try {
+      const res = await getProfile();
+      setMe(res.data);
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+    }
+  };
+  const fetchReviews = async () => {
+    try {
+      const res = await getAllAnimes();
+      console.log("Fetched reviews:", res.data);
+      setReviews(res.data);
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMe();
+    fetchReviews();
+    console.log(reviews);
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fce4ec" }}>
@@ -129,18 +164,6 @@ export default function ReviewsPage() {
       <main className="container mx-auto px-4 py-6 pb-24">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-[#526e0c]">Anime Reviews</h1>
-        </div>
-
-        {/* Demo toggle for logged in state */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
-          <button onClick={() => setIsLoggedIn(!isLoggedIn)} className="px-4 py-2 bg-[#526e0c] text-white rounded-md">
-            {isLoggedIn ? "Simulate Logout" : "Simulate Login"}
-          </button>
-          {isLoggedIn && (
-            <p className="mt-2 text-sm">
-              Logged in as <strong>{username}</strong>
-            </p>
-          )}
         </div>
 
         {/* Search and Filter */}
@@ -167,7 +190,9 @@ export default function ReviewsPage() {
               </div>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as "rating" | "reviews" | "title")}
+                onChange={(e) =>
+                  setSortBy(e.target.value as "rating" | "reviews" | "title")
+                }
                 className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f74e6d] focus:border-transparent appearance-none bg-white"
               >
                 <option value="rating">Highest Rated</option>
@@ -180,16 +205,16 @@ export default function ReviewsPage() {
 
         {/* Anime Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {filteredAndSortedAnime.map((anime) => (
+          {reviews.map((review, index) => (
             <AnimeCard
-              key={anime.id}
-              id={anime.id}
-              title={anime.title}
-              posterUrl={anime.posterUrl}
-              averageRating={anime.averageRating}
-              reviewCount={anime.reviewCount}
-              genre={anime.genre}
-              isFavorited={favoritedAnime.includes(Number(anime.id))}
+              key={index}
+              id={review.ID}
+              title={review.title}
+              posterUrl={review.anime_image}
+              rating={review.rating}
+              reviewCount={review.reviewCount}
+              genre={review.genre}
+              isFavorited={favoritedAnime.includes(Number(review.id))}
               onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
             />
           ))}
@@ -197,12 +222,14 @@ export default function ReviewsPage() {
 
         {filteredAndSortedAnime.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No anime found matching your search criteria.</p>
+            <p className="text-gray-500 text-lg">
+              No anime found matching your search criteria.
+            </p>
           </div>
         )}
       </main>
 
       <BottomNav />
     </div>
-  )
+  );
 }

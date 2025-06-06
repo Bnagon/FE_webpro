@@ -1,38 +1,70 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { X } from "lucide-react"
-import { StarRating } from "./star-rating"
+import { createReview, getProfile } from "@/services/api";
+import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { StarRating } from "./star-rating";
 
 interface ReviewFormProps {
-  animeTitle: string
-  onSubmit: (rating: number, reviewText: string) => void
-  onClose: () => void
+  animeID: string | number;
+  animeTitle: string;
+  onSubmit: (rating: number, reviewText: string) => void;
+  onClose: () => void;
 }
 
-export function ReviewForm({ animeTitle, onSubmit, onClose }: ReviewFormProps) {
-  const [rating, setRating] = useState(0)
-  const [reviewText, setReviewText] = useState("")
+export function ReviewForm({ animeID, animeTitle, onClose }: ReviewFormProps) {
+  const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [me, setMe] = useState<any>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (rating > 0 && reviewText.trim()) {
-      onSubmit(rating, reviewText)
-      setRating(0)
-      setReviewText("")
+      setRating(0);
+      setReviewText("");
     }
-  }
+    createReveiw();
+  };
 
-  const isFormValid = rating > 0 && reviewText.trim().length > 0
+  const fetchMe = async () => {
+    try {
+      const res = await getProfile();
+      setMe(res.data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+  const createReveiw = async () => {
+    try {
+      const res = await createReview({
+        anime_id: parseInt(animeID),
+        rating: rating,
+        review: reviewText,
+        author_id: me?.ID, // Assuming 'me' contains the user ID
+      });
+      console.log("Review created successfully:", res.data);
+    } catch (error) {
+      console.error("Error creating review:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchMe();
+  }, []);
+
+  const isFormValid = rating > 0 && reviewText.trim().length > 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold">Write a Review</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -43,15 +75,29 @@ export function ReviewForm({ animeTitle, onSubmit, onClose }: ReviewFormProps) {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">Your Rating*</label>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Your Rating*
+            </label>
             <div className="flex items-center gap-2">
-              <StarRating rating={rating} size="lg" interactive={true} onRatingChange={setRating} />
-              {rating > 0 && <span className="text-sm text-gray-600 ml-2">{rating} out of 5 stars</span>}
+              <StarRating
+                rating={rating}
+                size="lg"
+                interactive={true}
+                onRatingChange={setRating}
+              />
+              {rating > 0 && (
+                <span className="text-sm text-gray-600 ml-2">
+                  {rating} out of 5 stars
+                </span>
+              )}
             </div>
           </div>
 
           <div className="mb-6">
-            <label htmlFor="reviewText" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="reviewText"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Your Review*
             </label>
             <textarea
@@ -63,7 +109,9 @@ export function ReviewForm({ animeTitle, onSubmit, onClose }: ReviewFormProps) {
               placeholder="Share your thoughts about this anime..."
               required
             />
-            <div className="text-right text-sm text-gray-500 mt-1">{reviewText.length}/500</div>
+            <div className="text-right text-sm text-gray-500 mt-1">
+              {reviewText.length}/500
+            </div>
           </div>
 
           <div className="flex gap-3">
@@ -85,5 +133,5 @@ export function ReviewForm({ animeTitle, onSubmit, onClose }: ReviewFormProps) {
         </form>
       </div>
     </div>
-  )
+  );
 }

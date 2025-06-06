@@ -2,11 +2,11 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { registerUser } from "@/services/api"
 import { ArrowLeft, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { handleregister } from "../../lib/register.js"
+import { useState } from "react"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -15,7 +15,7 @@ export default function SignupPage() {
     email: "",
     username: "",
     password: "",
-    confirmPassword: "",
+    confirm_password: "",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -41,8 +41,8 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-      await handleregister(formData)
-      router.push("/login")
+    await registerUser(formData)
+    router.push("./")
   }
 
   return (
@@ -138,15 +138,15 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 mb-2">
                   Confirm password
                 </label>
                 <div className="relative">
                   <input
                     type={showConfirmPassword ? "text" : "password"}
-                    id="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                    id="confirm_password"
+                    value={formData.confirm_password}
+                    onChange={(e) => handleInputChange("confirm_password", e.target.value)}
                     placeholder="confirm password"
                     className="w-full px-4 py-3 bg-gray-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f74e6d] focus:bg-white transition-colors pr-12"
                     required

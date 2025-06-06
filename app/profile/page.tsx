@@ -1,94 +1,115 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Edit3, Calendar, MessageSquare } from "lucide-react"
-import { Header } from "@/components/header"
-import { BottomNav } from "@/components/bottom-nav"
-import { TweetPost } from "@/components/tweet-post"
-import { EventCard } from "@/components/event-card"
-import { ProfileEditForm } from "@/components/profile-edit-form"
-import axios from "axios"
+import { BottomNav } from "@/components/bottom-nav";
+import { EventCard } from "@/components/event-card";
+import { Header } from "@/components/header";
+import { ProfileEditForm } from "@/components/profile-edit-form";
+import { TweetPost } from "@/components/tweet-post";
+import { getMyEvents, getMyTweets, getProfile } from "@/services/api";
+import { Calendar, Edit3, MessageSquare } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [username, setUsername] = useState("JohnDoe")
-  const [userId, setUserId] = useState("user_john")
-  const [activeTab, setActiveTab] = useState<"tweets" | "events">("tweets")
-  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [activeTab, setActiveTab] = useState<"tweets" | "events">("tweets");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileData, setProfileData] = useState({
-  username: "",
-  email: "",
-  bio: "",
-  location: "",
-  joinDate: "",
-  avatar: "",
-})
-const formatDate = (isoString: string) => {
-  const date = new Date(isoString)
-  return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-}
+    id: "",
+    username: "",
+    email: "",
+    createdAt: "",
+    user_image: "",
+  });
+  const formatDate = (isoString: string) => {
+    const date = new Date(isoString);
+    return `${date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })}`;
+  };
 
-
-  const [userTweets, setUserTweets] = useState<any[]>([])
-  const [userEvents, setUserEvents] = useState<any[]>([])
+  const [userTweets, setUserTweets] = useState<any[]>([]);
+  const [userEvents, setUserEvents] = useState<any[]>([]);
 
   useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      const res = await fetch("http://localhost:8081/me", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
+    const fetchProfile = async () => {
+      try {
+        const res = await getProfile();
+        setIsLoggedIn(true);
+        console.log(isLoggedIn);
+        setProfileData({
+          id: res.data.id,
+          username: res.data.username,
+          email: res.data.email,
+          createdAt: res.data.CreatedAt,
+          user_image: res.data.user_image || "",
+        });
+        setIsLoggedIn(true);
+        console.log("Profile data:", res.data.CreatedAt);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-      if (!res.ok) throw new Error("Failed to fetch profile")
-
-      const data = await res.json()
-      setProfileData({
-        username: data.name,
-        email: data.email,
-        bio: data.bio,
-        location: data.location,
-        joinDate: formatDate(data.createdAt),
-        avatar: data.avatar || "",
-      })
-      setUsername(data.name)
-      setUserId(data.id)
-      setIsLoggedIn(true)
-    } catch (err) {
-      console.error(err)
-      setIsLoggedIn(false)
-    }
-  }
-
-  fetchProfile()
-}, [])
-
+    fetchProfile();
+  }, []);
 
   const handleProfileUpdate = (updatedData: any) => {
-    setProfileData({ ...profileData, ...updatedData })
-    setIsEditingProfile(false)
+    setProfileData({ ...profileData, ...updatedData });
+    setIsEditingProfile(false);
+  };
 
-  }
-
-  const handleTweetEdit = (tweetId: string | number, newContent: string, newImages: File[]) => {
+  const handleTweetEdit = (
+    tweetId: string | number,
+    newContent: string,
+    newImages: File[]
+  ) => {
     // In a real app, you would update the tweet via API
     setUserTweets((prevTweets) =>
-      prevTweets.map((tweet) => (tweet.id === tweetId ? { ...tweet, content: newContent, isEdited: true } : tweet)),
-    )
-  }
+      prevTweets.map((tweet) =>
+        tweet.id === tweetId
+          ? { ...tweet, content: newContent, isEdited: true }
+          : tweet
+      )
+    );
+  };
+  const fetchMyTweets = async () => {
+    try {
+      const res = await getMyTweets();
+      setUserTweets(res.data);
+    } catch (err) {
+      return console.log(err);
+    }
+  };
+  const fetchMyEvents = async () => {
+    try {
+      const res = await getMyEvents();
+      setUserEvents(res.data);
+      console.log("Fetched user events:", res.data);
+    } catch (err) {
+      return console.log(err);
+    }
+  };
+  useEffect(() => {
+    fetchMyTweets();
+    fetchMyEvents();
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#fce4ec" }}>
-      <Header/>
+      <Header />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 max-w-4xl pb-24">
-
         {!isLoggedIn ? (
           <div className="bg-white rounded-3xl p-8 text-center">
-            <h2 className="text-2xl font-bold mb-2">Please log in to view your profile</h2>
-            <p className="text-gray-600">You need to be logged in to access your profile page.</p>
+            <h2 className="text-2xl font-bold mb-2">
+              Please log in to view your profile
+            </h2>
+            <p className="text-gray-600">
+              You need to be logged in to access your profile page.
+            </p>
           </div>
         ) : (
           <>
@@ -96,20 +117,24 @@ const formatDate = (isoString: string) => {
             <div className="bg-white rounded-3xl p-6 shadow-md mb-6">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-start gap-4">
-                  {profileData.avatar ? (
-  <img
-    src={profileData.avatar}
-    alt="Avatar"
-    className="w-20 h-20 rounded-full object-cover flex-shrink-0"
-  />
-) : (
-  <div className="w-20 h-20 bg-[#d9d9d9] rounded-full flex-shrink-0" />
-)}
+                  {profileData.user_image ? (
+                    <img
+                      src={profileData.user_image}
+                      alt="Avatar"
+                      className="w-20 h-20 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-[#d9d9d9] rounded-full flex-shrink-0" />
+                  )}
 
                   <div>
-                    <h1 className="text-2xl font-bold">{profileData.username}</h1>
+                    <h1 className="text-2xl font-bold">
+                      {profileData.username}
+                    </h1>
                     <p className="text-gray-600 mb-2">{profileData.email}</p>
-                    <p className="text-sm text-gray-500">Joined {profileData.joinDate}</p>
+                    <p className="text-sm text-gray-500">
+                      Joined {formatDate(profileData.createdAt)}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -120,18 +145,6 @@ const formatDate = (isoString: string) => {
                   Edit Profile
                 </button>
               </div>
-
-              {profileData.bio && (
-                <div className="mb-4">
-                  <p className="text-gray-700">{profileData.bio}</p>
-                </div>
-              )}
-
-              {profileData.location && (
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600">📍 {profileData.location}</p>
-                </div>
-              )}
 
               <div className="flex gap-6 text-sm text-gray-600">
                 <span>
@@ -186,17 +199,17 @@ const formatDate = (isoString: string) => {
                   <div>
                     {userTweets.length > 0 ? (
                       <div className="space-y-6">
-                        {userTweets.map((tweet) => (
+                        {userTweets.map((tweet, index) => (
                           <TweetPost
-                            key={tweet.id}
-                            id={tweet.id}
+                            key={index}
+                            tweetId={tweet.ID}
                             username={tweet.username}
                             date={tweet.date}
                             content={tweet.content}
                             commentCount={tweet.commentCount}
                             likeCount={tweet.likeCount}
                             images={tweet.images}
-                            currentUser={username}
+                            currentUser={profileData.username}
                             onEdit={handleTweetEdit}
                             isEdited={tweet.isEdited}
                           />
@@ -205,8 +218,12 @@ const formatDate = (isoString: string) => {
                     ) : (
                       <div className="text-center py-8">
                         <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-600 mb-2">No tweets yet</h3>
-                        <p className="text-gray-500">Start sharing your thoughts with the community!</p>
+                        <h3 className="text-lg font-medium text-gray-600 mb-2">
+                          No tweets yet
+                        </h3>
+                        <p className="text-gray-500">
+                          Start sharing your thoughts with the community!
+                        </p>
                       </div>
                     )}
                   </div>
@@ -221,7 +238,9 @@ const formatDate = (isoString: string) => {
                             key={event.id}
                             id={event.id}
                             title={event.title}
+                            description={event.description}
                             date={event.date}
+                            imageUrl={event.event_image}
                             href={`/event/${event.id}`}
                           />
                         ))}
@@ -229,8 +248,12 @@ const formatDate = (isoString: string) => {
                     ) : (
                       <div className="text-center py-8">
                         <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-600 mb-2">No events created</h3>
-                        <p className="text-gray-500">Create your first event to bring people together!</p>
+                        <h3 className="text-lg font-medium text-gray-600 mb-2">
+                          No events created
+                        </h3>
+                        <p className="text-gray-500">
+                          Create your first event to bring people together!
+                        </p>
                       </div>
                     )}
                   </div>
@@ -243,5 +266,5 @@ const formatDate = (isoString: string) => {
 
       <BottomNav />
     </div>
-  )
+  );
 }

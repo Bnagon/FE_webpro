@@ -1,67 +1,62 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import { ImageIcon, X } from "lucide-react"
-import Image from "next/image"
+import { createTweet } from "@/services/api";
+import { ImageIcon, X } from "lucide-react";
+import Image from "next/image";
+import { useRef, useState } from "react";
 
 interface TweetComposerProps {
-  onSubmittweet?: (content: string, imagesBase64: string[]) => void
-  userId: string
-  username: string
-  onSubmitSuccess?: () => void
+  onSubmittweet?: (content: string, imagesBase64: string[]) => void;
+  userId: string;
+  username: string;
+  onSubmitSuccess?: () => void;
 }
 
-
-
-export function TweetComposer({ userId, username, onSubmittweet,onSubmitSuccess }: TweetComposerProps) {
-  const [content, setContent] = useState("")
-  const [images, setImages] = useState<File[]>([])
-  const [imagePreviews, setImagePreviews] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+export function TweetComposer({
+  userId,
+  username,
+  onSubmittweet,
+  onSubmitSuccess,
+}: TweetComposerProps) {
+  const [content, setContent] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newImages = Array.from(e.target.files)
-      setImages((prev) => [...prev, ...newImages])
+      const newImages = Array.from(e.target.files);
+      setImages((prev) => [...prev, ...newImages]);
 
-      const newPreviews = newImages.map((file) => URL.createObjectURL(file))
-      setImagePreviews((prev) => [...prev, ...newPreviews])
+      const newPreviews = newImages.map((file) => URL.createObjectURL(file));
+      setImagePreviews((prev) => [...prev, ...newPreviews]);
     }
-  }
+  };
 
   const handleRemoveImage = (index: number) => {
-    URL.revokeObjectURL(imagePreviews[index])
-    setImages((prev) => prev.filter((_, i) => i !== index))
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index))
-  }
+    URL.revokeObjectURL(imagePreviews[index]);
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
 
-const toBase64 = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = (error) => reject(error)
-  })
-
-const handleSubmit = async () => {
-  if (!content.trim() && images.length === 0) return
-
-  try {
-    if (onSubmittweet) {
-      const imagesBase64 = await Promise.all(images.map(toBase64))
-      await onSubmittweet(content, imagesBase64)
+  const handleSubmit = async () => {
+    if (!content.trim() && images.length === 0) return;
+    const formData = new FormData();
+    formData.append("description", content);
+    formData.append("author_id", userId);
+    if (images.length > 0) {
+      images.forEach((image) => {
+        formData.append("tweet_image", image);
+      });
     }
-
-    imagePreviews.forEach(URL.revokeObjectURL)
-    setContent("")
-    setImages([])
-    setImagePreviews([])
-
-    if (onSubmitSuccess) onSubmitSuccess()
-  } catch (err) {
-    console.error("Tweet post failed:", err)
-  }
-}
+    try {
+      console.log(formData.get("tweet_image"));
+      const res = await createTweet(formData);
+      console.log(res);
+    } catch (err) {
+      console.error("Tweet post failed:", err);
+    }
+  };
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm">
@@ -127,6 +122,5 @@ const handleSubmit = async () => {
         </button>
       </div>
     </div>
-  )
+  );
 }
-
